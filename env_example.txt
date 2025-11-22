@@ -1,0 +1,19 @@
+BOT_TOKEN=your_telegram_bot_token_here
+ADMIN_IDS=123456789,987654321
+ROBOKASSA_MERCHANT_LOGIN=your_merchant_login
+ROBOKASSA_PASSWORD_1=your_password_1
+ROBOKASSA_PASSWORD_2=your_password_2
+ROBOKASSA_TEST_MODE=True
+CHANNEL_1_ID=@orden_demiurgov
+CHANNEL_2_ID=@roditeli_demiurgi
+
+# PostgreSQL Database Configuration
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=demiurg_bot
+DB_USER=postgres
+DB_PASSWORD=your_password
+
+SUPPORT_LINK=https://t.me/lnhvvu
+OFFER_LINK=https://disk.yandex.ru/client/disk/Договор%20оферты%20
+

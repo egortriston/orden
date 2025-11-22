@@ -1,0 +1,26 @@
+# Команды для загрузки кода в GitHub
+
+# 1. Перейти в папку проекта
+cd C:\Users\Triston\Desktop\VSC\Orden_demiurgov
+
+# 2. Инициализировать git (если еще не сделано)
+git init
+
+# 3. Добавить все файлы
+git add .
+
+# 4. Сделать первый коммит
+git commit -m "Initial commit: Telegram bot for Orden Demiurgov"
+
+# 5. Добавить удаленный репозиторий
+git remote add origin https://github.com/egortriston/orden.git
+
+# 6. Переименовать ветку в main
+git branch -M main
+
+# 7. Загрузить код на GitHub
+git push -u origin main
+
+# Если возникнет ошибка, что репозиторий не пуст, используйте:
+# git push -u origin main --force
+
