@@ -151,21 +151,15 @@ async def callback_payment(callback: CallbackQuery, bot: Bot):
     # Create payment record
     await db.create_payment(user_id, channel_name, amount, invoice_id, "pending")
     
-    # Send payment message
-    await callback.message.edit_text(
-        f"Переход к оплате...\n\n{description}\nСумма: {amount} ₽",
-        reply_markup=None
-    )
-    
-    # Send payment button
+    # Send payment button directly (according to TZ: button immediately redirects to payment)
     from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
     payment_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="💳 Перейти к оплате", url=payment_url)],
         [InlineKeyboardButton(text="На главную", callback_data="main_menu")]
     ])
     
-    await callback.message.answer(
-        "Нажмите на кнопку ниже для перехода к оплате:",
+    await callback.message.edit_text(
+        f"{description}\nСумма: {amount} ₽",
         reply_markup=payment_keyboard
     )
     await callback.answer()
