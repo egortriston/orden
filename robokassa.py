@@ -1,5 +1,6 @@
 import hashlib
-import uuid
+import time
+import random
 from urllib.parse import urlencode
 from config import (
     ROBOKASSA_CHANNEL_1_MERCHANT_LOGIN,
@@ -12,7 +13,7 @@ from config import (
     ROBOKASSA_TEST_MODE
 )
 
-def generate_payment_url(amount: float, description: str, invoice_id: str = None, user_id: int = None, channel_name: str = None) -> str:
+def generate_payment_url(amount: float, description: str, invoice_id: str = None, user_id: int = None, channel_name: str = None) -> tuple:
     """
     Generate Robokassa payment URL
     
@@ -37,35 +38,50 @@ def generate_payment_url(amount: float, description: str, invoice_id: str = None
         raise ValueError(f"Unknown channel_name: {channel_name}. Must be 'channel_1' or 'channel_2'")
     
     if invoice_id is None:
-        invoice_id = str(uuid.uuid4())
+        # Generate unique integer ID (Robokassa requires integer from 1 to 9223372036854775807)
+        # Using microseconds timestamp + random component to ensure uniqueness
+        timestamp_part = int(time.time() * 1000000)
+        random_part = random.randint(100, 999)  # 3-digit random component
+        invoice_id = str(timestamp_part + random_part)
     
     # Convert amount to format expected by Robokassa (e.g., 1990.00)
     amount_str = f"{amount:.2f}"
     
-    # Create signature
-    signature_string = f"{merchant_login}:{amount_str}:{invoice_id}:{password_1}"
-    signature = hashlib.md5(signature_string.encode()).hexdigest()
-    
-    # Build URL parameters
+    # Build URL parameters (without signature first)
     params = {
         'MerchantLogin': merchant_login,
         'OutSum': amount_str,
         'InvId': invoice_id,
         'Description': description,
-        'SignatureValue': signature,
     }
     
     if ROBOKASSA_TEST_MODE:
         params['IsTest'] = '1'
     
+    # Add shp_ parameters (must be in alphabetical order for signature)
+    shp_params = {}
     if user_id:
         params['Shp_user_id'] = str(user_id)
+        shp_params['Shp_user_id'] = str(user_id)
+    
+    # Create signature: MerchantLogin:OutSum:InvId:Password1[:shp_params in alphabetical order]
+    signature_string = f"{merchant_login}:{amount_str}:{invoice_id}:{password_1}"
+    
+    # Add shp_ parameters to signature in alphabetical order
+    if shp_params:
+        # Sort shp_ parameters alphabetically
+        sorted_shp = sorted(shp_params.items())
+        shp_string = ':'.join([f"{key}={value}" for key, value in sorted_shp])
+        signature_string = f"{signature_string}:{shp_string}"
+    
+    signature = hashlib.md5(signature_string.encode()).hexdigest()
+    params['SignatureValue'] = signature
     
     # Build URL
     url = f"{ROBOKASSA_BASE_URL}?{urlencode(params)}"
     return url, invoice_id
 
-def verify_payment_signature(amount: str, invoice_id: str, signature: str, password: str) -> bool:
+def verify_payment_signature(amount: str, invoice_id: str, signature: str, password: str, shp_params: dict = None) -> bool:
     """
     Verify Robokassa payment signature
     
@@ -74,11 +90,20 @@ def verify_payment_signature(amount: str, invoice_id: str, signature: str, passw
         invoice_id: Invoice ID
         signature: Signature from Robokassa
         password: Password for verification (Password #2)
+        shp_params: Dictionary of shp_ parameters (e.g., {'Shp_user_id': '123'})
     
     Returns:
         True if signature is valid
     """
+    # Formula: OutSum:InvId:Password2[:shp_params in alphabetical order]
     signature_string = f"{amount}:{invoice_id}:{password}"
+    
+    # Add shp_ parameters to signature in alphabetical order
+    if shp_params:
+        sorted_shp = sorted(shp_params.items())
+        shp_string = ':'.join([f"{key}={value}" for key, value in sorted_shp])
+        signature_string = f"{signature_string}:{shp_string}"
+    
     calculated_signature = hashlib.md5(signature_string.encode()).hexdigest()
     return calculated_signature.lower() == signature.lower()
 
